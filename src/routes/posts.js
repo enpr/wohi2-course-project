@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../lib/prisma");
+const authenticate = require("../middleware/auth");
+const isOwner = require("../middleware/isOwner");
+// Apply authentication to ALL routes in this router
+router.use(authenticate);
 
 // GET /questions
 // List all questions
@@ -30,14 +34,14 @@ router.post("/", async (req, res) => {
  });
  }
  const newQuestion = await prisma.question.create({
- data: { question, answer }
+ data: { question, answer, userId: req.user.userId }
  });
  res.status(201).json(newQuestion);
 });
 
 // PUT /questions/:qId
 // Edit a question
-router.put("/:qId", async (req, res) => {
+router.put("/:qId", isOwner, async (req, res) => {
  const qId = Number(req.params.qId);
  const { question, answer } = req.body;
  if (!question || !answer) {
@@ -58,7 +62,7 @@ router.put("/:qId", async (req, res) => {
 
 // DELETE /questions/:qId
 // Delete a question
-router.delete("/:qId", async (req, res) => {
+router.delete("/:qId", isOwner, async (req, res) => {
  const qId = Number(req.params.qId);
  const existing = await prisma.question.findUnique({ where: { id: qId } });
  if (!existing) {
