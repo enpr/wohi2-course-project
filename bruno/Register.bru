@@ -6,10 +6,14 @@ meta {
 
 post {
   url: {{baseUrl}}/api/auth/register
-  body: none
-  auth: inherit
+  body: json
+  auth: none
 }
 
-settings {
-  encodeUrl: true
+body:json {
+  {
+    "email": "test@example.com",
+    "password": "1234",
+    "name": "Test User"
+  }
 }

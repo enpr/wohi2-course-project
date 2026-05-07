@@ -8,20 +8,24 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 const seedQuestions = [
  {
- question: "question1",
- answer: "answer1",
+ question: "What does HTTP stand for?",
+ answer: "HyperText Transfer Protocol",
+ keywords: ["http", "web"],
  },
  {
- question: "question2",
- answer: "answer2",
+ question: "Which HTTP method is used to retrieve data?",
+ answer: "GET",
+ keywords: ["http", "api"],
  },
  {
- question: "question3",
- answer: "answer3",
+ question: "What is the default port for HTTPS?",
+ answer: "443",
+ keywords: ["http", "web"],
  },
  {
- question: "question4",
- answer: "answer4",
+ question: "What does REST stand for?",
+ answer: "Representational State Transfer",
+ keywords: ["api", "rest"],
  },
 ];
 async function main() {
@@ -41,6 +45,7 @@ async function main() {
  data: {
  question: q.question,
  answer: q.answer,
+ keywords: q.keywords,
  userId: user.id,
  },
  });

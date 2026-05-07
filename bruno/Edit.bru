@@ -1,18 +1,18 @@
 meta {
-  name: Edit
+  name: Edit Question
   type: http
-  seq: 4
+  seq: 6
 }
 
 put {
-  url: {{baseUrl}}/api/questions/1
+  url: {{baseUrl}}/api/questions/7
   body: json
-  auth: none
+  auth: inherit
 }
 
 body:json {
   {
-    "question": "questionY",
-    "answer": "answerY"
+    "question": "What is 2 + 2? (edited)",
+    "answer": "4"
   }
 }

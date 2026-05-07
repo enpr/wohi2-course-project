@@ -7,13 +7,18 @@ const prisma = require("./lib/prisma");
 const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies (will be useful in later steps)
 app.use(express.json());
-app.use("/public", express.static(path.join(__dirname, "..", "public")));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // everything under /api/questions
 app.use("/api/auth", authRouter);
 app.use("/api/questions", questionsRouter);
 app.use((req, res) => {
  res.json({msg: "Not found"});
+});
+app.use((err, req, res, next) => {
+ console.error(err);
+ res.status(500).json({ error: err.message });
 });
 
 //// Hello World route

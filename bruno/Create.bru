@@ -1,18 +1,18 @@
 meta {
-  name: Create
+  name: Create Question
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
   url: {{baseUrl}}/api/questions
   body: json
-  auth: none
+  auth: inherit
 }
 
 body:json {
   {
-    "question": "questionX",
-    "answer": "answerX"
+    "question": "What is 2 + 2?",
+    "answer": "4"
   }
 }
