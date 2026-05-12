@@ -5,6 +5,7 @@ const router = express.Router();
 const prisma = require("../lib/prisma");
 const authenticate = require("../middleware/auth");
 const isOwner = require("../middleware/isOwner");
+const { ValidationError, NotFoundError } = require("../lib/errors");
 
 const storage = multer.diskStorage({
  destination: path.join(__dirname, "..", "..", "public", "uploads"),
@@ -78,9 +79,7 @@ router.get("/:qId", async (req, res) => {
  attempts: { where: { userId: req.user.userId, correct: true }, take: 1 },
  },
  });
- if (!question) {
- return res.status(404).json({ message: "Question not found" });
- }
+ if (!question) throw new NotFoundError("Question not found");
  res.json(formatQuestion(question));
 });
 
@@ -88,11 +87,8 @@ router.get("/:qId", async (req, res) => {
 // Create a new question
 router.post("/", upload.single("image"), async (req, res) => {
  const { question, answer, keywords } = req.body;
- if (!question || !answer) {
- return res.status(400).json({
- message: "question and answer are required"
- });
- }
+ if (!question || !answer)
+ throw new ValidationError("question and answer are required");
  const keywordsArray = keywords
  ? keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean)
  : [];
@@ -108,11 +104,8 @@ router.post("/", upload.single("image"), async (req, res) => {
 router.put("/:qId", upload.single("image"), isOwner, async (req, res) => {
  const qId = Number(req.params.qId);
  const { question, answer, keywords } = req.body;
- if (!question || !answer) {
- return res.json({
- message: "question and answer are required"
- });
- }
+ if (!question || !answer)
+ throw new ValidationError("question and answer are required");
  const data = { question, answer };
  if (keywords !== undefined) {
  data.keywords = keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
@@ -131,9 +124,7 @@ router.post("/:qId/play", async (req, res) => {
  const qId = Number(req.params.qId);
  const { answer } = req.body;
  const question = await prisma.question.findUnique({ where: { id: qId } });
- if (!question) {
- return res.status(404).json({ message: "Question not found" });
- }
+ if (!question) throw new NotFoundError("Question not found");
  const correct = answer?.trim().toLowerCase() === question.answer.trim().toLowerCase();
  const attempt = await prisma.attempt.create({
  data: { correct, submittedAnswer: answer, userId: req.user.userId, questionId: qId },

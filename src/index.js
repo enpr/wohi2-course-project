@@ -17,8 +17,9 @@ app.use((req, res) => {
  res.json({msg: "Not found"});
 });
 app.use((err, req, res, next) => {
- console.error(err);
- res.status(500).json({ error: err.message });
+ const status = err.status || 500;
+ if (status === 500) console.error(err);
+ res.status(status).json({ message: err.message });
 });
 
 //// Hello World route
