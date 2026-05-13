@@ -1,47 +1,15 @@
-const express = require('express');
-const path = require('path');
-const app = express();
-const questionsRouter = require("./routes/posts");
-const authRouter = require("./routes/auth");
+const app = require("./app");
+const logger = require("./lib/logger");
 const prisma = require("./lib/prisma");
 const PORT = process.env.PORT || 3000;
-// Middleware to parse JSON bodies (will be useful in later steps)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "..", "public")));
 
-// everything under /api/questions
-app.use("/api/auth", authRouter);
-app.use("/api/questions", questionsRouter);
-app.use((req, res) => {
- res.json({msg: "Not found"});
-});
-app.use((err, req, res, next) => {
- const status = err.status || 500;
- if (status === 500) console.error(err);
- res.status(status).json({ message: err.message });
+const server = app.listen(PORT, () => {
+ logger.info({ port: PORT }, "server listening");
 });
 
-//// Hello World route
-//app.get('/', (req, res) => {
-// res.json({ message: 'Hello, World!' });
-//});
-//// Health check route
-//app.get('/health', (req, res) => {
-// res.json({ status: 'ok', timestamp: new Date().toISOString() });
-//});
-
-// Start the server
-app.listen(PORT, () => {
- console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
+async function shutdown() {
  await prisma.$disconnect();
- process.exit(0);
-});
-process.on("SIGTERM", async () => {
- await prisma.$disconnect();
- process.exit(0);
-});
+ server.close(() => process.exit(0));
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

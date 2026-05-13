@@ -5,7 +5,14 @@ const router = express.Router();
 const prisma = require("../lib/prisma");
 const authenticate = require("../middleware/auth");
 const isOwner = require("../middleware/isOwner");
+const { z } = require("zod");
 const { ValidationError, NotFoundError } = require("../lib/errors");
+
+const QuestionInput = z.object({
+ question: z.string().min(1),
+ answer: z.string().min(1),
+ keywords: z.union([z.string(), z.array(z.string())]).optional(),
+});
 
 const storage = multer.diskStorage({
  destination: path.join(__dirname, "..", "..", "public", "uploads"),
@@ -18,7 +25,7 @@ const upload = multer({
  storage,
  fileFilter: (req, file, cb) => {
  if (file.mimetype.startsWith("image/")) cb(null, true);
- else cb(new Error("Only image files are allowed"));
+ else cb(new ValidationError("Only image files are allowed"));
  },
  limits: { fileSize: 5 * 1024 * 1024 },
 });
@@ -86,12 +93,10 @@ router.get("/:qId", async (req, res) => {
 // POST /questions
 // Create a new question
 router.post("/", upload.single("image"), async (req, res) => {
- const { question, answer, keywords } = req.body;
- if (!question || !answer)
- throw new ValidationError("question and answer are required");
- const keywordsArray = keywords
+ const { question, answer, keywords } = QuestionInput.parse(req.body);
+ const keywordsArray = typeof keywords === "string"
  ? keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean)
- : [];
+ : (keywords || []).map(k => k.trim().toLowerCase());
  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
  const newQuestion = await prisma.question.create({
  data: { question, answer, keywords: keywordsArray, imageUrl, userId: req.user.userId }
@@ -103,12 +108,12 @@ router.post("/", upload.single("image"), async (req, res) => {
 // Edit a question
 router.put("/:qId", upload.single("image"), isOwner, async (req, res) => {
  const qId = Number(req.params.qId);
- const { question, answer, keywords } = req.body;
- if (!question || !answer)
- throw new ValidationError("question and answer are required");
+ const { question, answer, keywords } = QuestionInput.parse(req.body);
  const data = { question, answer };
  if (keywords !== undefined) {
- data.keywords = keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+ data.keywords = typeof keywords === "string"
+ ? keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean)
+ : keywords.map(k => k.trim().toLowerCase());
  }
  if (req.file) data.imageUrl = `/uploads/${req.file.filename}`;
  const updated = await prisma.question.update({
@@ -151,9 +156,8 @@ router.delete("/:qId", isOwner, async (req, res) => {
 });
 
 router.use((err, req, res, next) => {
- if (err instanceof multer.MulterError || err?.message === "Only image files are allowed") {
+ if (err instanceof multer.MulterError)
  return res.status(400).json({ message: err.message });
- }
  next(err);
 });
 
